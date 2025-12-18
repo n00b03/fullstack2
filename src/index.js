@@ -1,19 +1,16 @@
-import express from "express";
 import dotenv from "dotenv";
 import dbconnect from "./db/dbConnect.js";
+import { app } from "./app.js";
 
 dotenv.config();
 
-const app = express();
-
-dbconnect();
-
-app.get('/hello', (req, res) => {
-    res.send('Hello, World!');
-});
-
-
-app.listen(process.env.PORT,() => {
-    console.log("server work")
+dbconnect()
+.then(() => {
+    app.listen(process.env.PORT || 8000 , () => {
+        console.log("server work")
+    })
+})
+.catch((err) => {
+    console.log("error after db connect during server listing")
 })
 
