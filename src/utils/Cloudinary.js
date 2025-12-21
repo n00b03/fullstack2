@@ -32,7 +32,7 @@ const uploadImage = async (imagePath) => {
       };
       // Upload the image
       const result = await cloudinary.uploader.upload(imagePath, options);
-
+      fs.unlinkSync(imagePath); // remove the locally saved temporary file after upload
       return result; // Return the URL of the uploaded image
 
     } catch (error) {
