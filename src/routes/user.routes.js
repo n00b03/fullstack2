@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { registerUser , loginUser , logoutUser } from '../controllers/user.controller.js';
+import { registerUser , loginUser , logoutUser , getAccessToken } from '../controllers/user.controller.js';
 import  isLogin  from '../middlewares/isLogin.middleware.js';
 import { upload } from "../middlewares/multer.middleware.js" 
+
 
 const route = Router()
 
@@ -18,5 +19,6 @@ route.post("/register", upload.fields([
 
 route.post("/login", loginUser);
 route.post("/logout", isLogin, logoutUser);
+route.get("/get-access-token", getAccessToken);
 
 export default route;
