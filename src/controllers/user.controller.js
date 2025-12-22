@@ -39,7 +39,11 @@ const registerUser = asyncHandler ( async (req , res) => {
     }
 
     const img = req.files?.avatar[0].path;
-    const coverimg = req.files?.coverimage[0].path;
+    let coverimg;
+
+    if(req.files?.coverimage){
+        coverimg = req.files?.coverimage[0].path;
+    }
 
     if(!img){
         throw new ApiError(400,"Avatar image is required")
@@ -176,4 +180,86 @@ const getAccessToken = asyncHandler ( async (req,res) => {
     )
 });
 
-export { registerUser , loginUser , logoutUser , getAccessToken };
+const passwordChange = asyncHandler ( async (req,res) => {
+
+    const { oldPassword , newPassword } = req.body;
+    if(!oldPassword || !newPassword){
+        throw new ApiError(400,"Password missing")
+    }
+
+    const user = await User.findById(req.user?.id);
+
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+    if(!isPasswordCorrect){
+        throw new ApiError(401,"unthorized access invalid old password")
+    }
+
+    user.password = newPassword;
+    await user.save({validateBeforeSave:false});
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,{},"password change successfully"))
+
+})
+
+const getUserProfile = asyncHandler  ( async (req,res) => {
+
+    const user = await User.findById(req.user?.id).select("-password -__v -createdAt -updatedAt -watchHistory -refreshToken")
+    if(!user){
+        throw new ApiError(404,"unable to get user")
+    }
+
+    return res
+    .status(200)
+    .json( new ApiResponse(200,user,"user fetched successfully"))
+})
+
+const updateProfile = asyncHandler(async (req, res) => {
+
+    if (!req.body && !req.files) {
+        throw new ApiError(400, "Nothing to update");
+    }
+
+    const { newUsername, newFullname } = req.body || {};
+
+    if (!newUsername && !newFullname && !req.files) {
+        throw new ApiError(400, "Enter something to update");
+    }
+
+    const user = await User.findById(req.user?.id);
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    // Update text fields
+    if (newUsername) user.username = newUsername;
+    if (newFullname) user.fullname = newFullname;
+
+    // Handle files
+    if (req.files) {
+        if (req.files.avatar) {
+            const uploadedAvatar = await uploadImage(req.files.avatar[0].path);
+            user.avatar = uploadedAvatar.url;
+        }
+
+        if (req.files.coverimage) {
+            const uploadedCover = await uploadImage(req.files.coverimage[0].path);
+            user.coverimage = uploadedCover.url;
+        }
+    }
+
+    await user.save({ validateBeforeSave: false });
+
+    const updatedUser = await User.findById(user._id)
+        .select("-password -__v -createdAt -updatedAt -watchHistory -refreshToken");
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedUser, "Profile updated successfully")
+    );
+});
+
+
+export { registerUser , loginUser , logoutUser , getAccessToken , getUserProfile , passwordChange , updateProfile };
