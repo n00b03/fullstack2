@@ -1,5 +1,14 @@
 import { Router } from 'express';
-import { registerUser , loginUser , logoutUser , getAccessToken ,  getUserProfile, passwordChange , updateProfile } from '../controllers/user.controller.js';
+import { 
+    registerUser , 
+    loginUser , 
+    logoutUser , 
+    getAccessToken ,  
+    getUserProfile, 
+    passwordChange , 
+    updateProfile, 
+    getChannelProfile 
+} from '../controllers/user.controller.js';
 import  isLogin  from '../middlewares/isLogin.middleware.js';
 import { upload } from "../middlewares/multer.middleware.js" 
 
@@ -30,5 +39,6 @@ route.post("/update-profile", isLogin, upload.fields([
         name:"coverimage",maxCount:1
     }
 ]), updateProfile);
+route.get("/me/:username" , isLogin , getChannelProfile);
 
 export default route;

@@ -261,5 +261,77 @@ const updateProfile = asyncHandler(async (req, res) => {
     );
 });
 
+const getChannelProfile = asyncHandler (async (req,res) => {
+    const {username} = req.params;
 
-export { registerUser , loginUser , logoutUser , getAccessToken , getUserProfile , passwordChange , updateProfile };
+    if(!username){
+        throw new ApiError(400,"Username is required")
+    }
+
+    const channel = await User.aggregate([
+        {
+            $match : {
+                username
+            }
+        },
+        {
+            $lookup : {
+                from:"subscriptions",
+                localField : "_id",
+                foreignField : "channel",
+                as:"subscribers"
+            }
+        },
+        {
+            $lookup:{
+                from:"subscriptions",
+                localField:"_id",
+                foreignField:"subscriber",
+                as:"subscribedTo"
+            }
+        },
+        {
+            $addFields : {
+                subscriberCount : {
+                    $size : "$subscribers"
+                },
+                subscribedToCount : {
+                    $size : "$subscribedTo"
+                },
+                isSubscribed : {
+                    $cond : {
+                        if:{$in : [req.user?.id,"$subscribers.subscriber"]},
+                        then:true,
+                        else:false
+                    }
+                }
+            }
+
+        },
+        {
+           $project : {
+            fullname:1,
+            username:1,
+            isSubscribed:1,
+            subscribedToCount:1,
+            subscriberCount:1,
+            avatar:1,
+            coverimage:1,
+            email:1
+
+           } 
+        }
+    ])
+
+    if(!channel || channel.length === 0){
+        throw new ApiError(404,"Channel not found")
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200,channel[0],"Channel profile fetched successfully")
+    )
+
+})
+
+
+export { registerUser , loginUser , logoutUser , getAccessToken , getUserProfile , passwordChange , updateProfile , getChannelProfile };
